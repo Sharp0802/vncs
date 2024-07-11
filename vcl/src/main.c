@@ -54,7 +54,7 @@ int handlefd(
 		case VSNL_LIST:
 		{
 			unsigned short count = 0;
-			/* __thread */ struct sockaddr_in peers[BUFSIZ]; // function-scope variable implicitly declared '__thread'
+			struct sockaddr_in peers[BUFSIZ]; // Uncommented __thread
 			for (int i = 1; i < nfds; ++i)
 			{
 				if (!fds[i].fd || fds[i].fd == fd)
@@ -68,8 +68,14 @@ int handlefd(
 			}
 
 			count = htons(count);
-			write(fd, &count, sizeof count);
-			write(fd, peers, sizeof peers);
+			if (write(fd, &count, sizeof count) < 0) {
+				perror("write failed (count)");
+				return errno;
+			}
+			if (write(fd, peers, count * sizeof(struct sockaddr_in)) < 0) { // Fixed buffer overflow
+				perror("write failed (peers)");
+				return errno;
+			}
 
 			break;
 		}
@@ -285,7 +291,7 @@ int client(int argc, char* argv[])
 		ver.major, ver.minor, ver.patch,
 		argv[0]);
 
-	if (fgets(buffer, sizeof buffer, stdin)[0] == 'y')
+	if (fgets(buffer, sizeof buffer, stdin) != NULL && buffer[0] == 'y') // Fixed potential buffer overflow
 	{
 	}
 	else
