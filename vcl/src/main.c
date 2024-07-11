@@ -54,7 +54,7 @@ int handlefd(
 		case VSNL_LIST:
 		{
 			unsigned short count = 0;
-			struct sockaddr_in peers[BUFSIZ]; // Uncommented __thread
+			static _thread struct sockaddr_in peers[BUFSIZ]; // Uncommented __thread
 			for (int i = 1; i < nfds; ++i)
 			{
 				if (!fds[i].fd || fds[i].fd == fd)
