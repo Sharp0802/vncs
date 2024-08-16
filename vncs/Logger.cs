@@ -1,6 +1,7 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace vncs;
 
@@ -20,19 +21,22 @@ public static class Logger
         if (View is null)
             throw new NullReferenceException();
         
-        View.Children.Add(new LogBlob
+        Dispatcher.UIThread.Post(() =>
         {
-            Icon = (Geometry)App.Current.Resources[level switch
+            View.Children.Add(new LogBlob
             {
-                Level.Info => "Info",
-                Level.Warn => "Warn",
-                Level.Fail => "Fail"
-            }]!,
-            Text = $"[{DateTime.Now:HH:mm:ss}] {message}",
-            Background = new SolidColorBrush(Color.FromRgb(
-                level is Level.Warn or Level.Fail ? (byte)0x44 : (byte)0x33,
-                level is Level.Warn ? (byte)0x44 : (byte)0x33, 
-                0x33))
+                Icon = (Geometry)App.Current.Resources[level switch
+                {
+                    Level.Info => "Info",
+                    Level.Warn => "Warn",
+                    Level.Fail => "Fail"
+                }]!,
+                Text = $"[{DateTime.Now:HH:mm:ss}] {message}",
+                Background = new SolidColorBrush(Color.FromRgb(
+                    level is Level.Warn or Level.Fail ? (byte)0x44 : (byte)0x33,
+                    level is Level.Warn ? (byte)0x44 : (byte)0x33, 
+                    0x33))
+            }); 
         });
     }
     
