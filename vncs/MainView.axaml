@@ -11,9 +11,8 @@
         <Grid Grid.Column="0" 
               RowDefinitions="*,Auto" 
               MaxWidth="240" 
-              Margin="10"
-              Name="ConfigurationPanel">
-            <StackPanel Grid.Row="0">
+              Margin="10">
+            <StackPanel Grid.Row="0" Name="ConfigurationPanel">
                 <TextBlock Margin="0 0 0 10"
                            FontSize="{StaticResource TabItemHeaderFontSize}"
                            Text="Configuration" />
@@ -40,8 +39,12 @@
                     HorizontalAlignment="Stretch"
                     Click="OnRun">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock FontFamily="avares://vncs/Assets#Fira Code" Foreground="Green" Text="|>"/>
-                    <TextBlock Text="Run"/>
+                    <TextBlock Name="RunButtonIcon"
+                               FontFamily="avares://vncs/Assets#Fira Code"
+                               Foreground="Green" 
+                               Text="|>"/>
+                    <TextBlock Name="RunButtonText"
+                               Text="Run"/>
                 </StackPanel>
             </Button>
         </Grid>

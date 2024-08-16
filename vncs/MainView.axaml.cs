@@ -1,16 +1,22 @@
 using System;
+using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
+using vncs.Net;
 
 namespace vncs;
 
 public partial class MainView : UserControl
 {
-    private string _remoteEndPointText = "127.0.0.1";
+    private string _remoteEndPointText = "127.0.0.1:6974";
+
+    private Node? _node;
     
     public MainView()
     {
@@ -47,9 +53,51 @@ public partial class MainView : UserControl
         set => SetValue(LocalEndPointTextProperty, value);
     }
 
-    private void OnRun(object? sender, RoutedEventArgs e)
+    private async void OnRun(object? sender, RoutedEventArgs e)
     {
-        ConfigurationPanel.IsEnabled = false;
+        if (_node is null)
+            await Run();
+        else
+            await Abort();
+    }
+
+    private async Task Run()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            ConfigurationPanel.IsEnabled = false;
+            RunButtonIcon.Text           = "||";
+            RunButtonIcon.Foreground     = Brushes.Red;
+            RunButtonText.Text           = "Abort";
+        });
+
+        var root = false;
+        await Dispatcher.UIThread.InvokeAsync(() => root = IsRoot);
+        
+        await Task.Factory.StartNew(() =>
+        {
+            _node = root ? new Node() : new Node(IPEndPoint.Parse(RemoteEndPointText));
+            if (_node.Initialize())
+                _node.BeginExecution();
+        });
+    }
+
+    private async Task Abort()
+    {
+        await Task.Factory.StartNew(() =>
+        {
+            _node.EndExecution();
+            _node.Dispose();
+            _node = null;
+            
+            Dispatcher.UIThread.Post(() =>
+            {
+                ConfigurationPanel.IsEnabled = true;
+                RunButtonIcon.Text           = "|>";
+                RunButtonIcon.Foreground     = Brushes.Green;
+                RunButtonText.Text           = "Run";
+            });
+        });
     }
 
     private void OnInitialized(object? sender, EventArgs e)
@@ -60,6 +108,6 @@ public partial class MainView : UserControl
         Logger.Warn("DISCLAIMER: This is experimental version of VNCS; Functionality of features are not guaranteed");
     }
 
-    [GeneratedRegex(@"[0-9]{1,3}(\.?[0-9]{1,3}){3}")]
+    [GeneratedRegex(@"[0-9]{1,3}(\.?[0-9]{1,3}){3}(:[0-9]{1,5})?")]
     private static partial Regex EndPointFormatRegex();
 }
