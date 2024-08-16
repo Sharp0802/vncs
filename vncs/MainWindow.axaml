@@ -2,58 +2,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vncs="clr-namespace:vncs"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="vncs.MainWindow"
-        DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}"
-        Initialized="OnInitialized"
         Title="vncs">
-
-    <Grid ColumnDefinitions="Auto,*">
-        <Grid Grid.Column="0" 
-              RowDefinitions="*,Auto" 
-              MaxWidth="240" 
-              Margin="10"
-              Name="ConfigurationPanel">
-            <StackPanel Grid.Row="0">
-                <TextBlock Margin="0 0 0 10"
-                           FontSize="{StaticResource TabItemHeaderFontSize}"
-                           Text="Configuration" />
-
-                <ToggleButton Margin="0 0 0 10"
-                              HorizontalAlignment="Stretch"
-                              Content="Root" 
-                              IsChecked="{Binding IsRoot, Mode=TwoWay}"/>
-
-                <Label>Remote Endpoint</Label>
-                <TextBox Margin="0 0 0 10"
-                         Text="{Binding RemoteEndPointText, Mode=TwoWay}"
-                         IsEnabled="{Binding !IsRoot, Mode=OneWay}"
-                         Name="RemoteEndPointBox" />
-
-                <Label>Local Endpoint</Label>
-                <TextBox Margin="0 0 0 10"
-                         Text="{Binding LocalEndPointText, Mode=OneWay}"
-                         Name="LocalEndPointBox"
-                         IsEnabled="False" />
-            </StackPanel>
-
-            <Button Grid.Column="0" Grid.Row="1"
-                    HorizontalAlignment="Stretch"
-                    Click="OnRun">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock FontFamily="avares://vncs/Assets#Fira Code" Foreground="Green" Text="|>"/>
-                    <TextBlock Text="Run"/>
-                </StackPanel>
-            </Button>
-        </Grid>
-        
-        <ScrollViewer Grid.Column="1">
-            <TextBlock Background="{StaticResource TextControlForeground}" 
-                       Foreground="{StaticResource TextControlBackgroundFocused}"
-                       FontFamily="avares://vncs/Assets#Fira Code" 
-                       Padding="10"
-                       Text="{Binding TerminalText, Mode=TwoWay}"/>
-        </ScrollViewer>
-    </Grid>
-
+    <vncs:MainView/>
 </Window>

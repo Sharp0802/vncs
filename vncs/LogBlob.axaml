@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="vncs.LogBlob"
+             DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}">
+    
+    <Border Background="{Binding Background, Mode=OneWay}" 
+            Padding="5" 
+            CornerRadius="6">
+        <Border.Styles>
+            <Style Selector="TextBlock">
+                <Setter Property="FontFamily" Value="avares://vncs/Assets#Fira Code"/>
+            </Style>
+        </Border.Styles>
+                    
+        <Grid ColumnDefinitions="Auto,*">
+            <PathIcon Grid.Column="0" 
+                      Height="16" Width="16"
+                      Margin="5,0,10,0"
+                      Foreground="#CCC"
+                      Data="{Binding Icon, Mode=OneWay}"/>
+            <TextBlock Grid.Column="1" 
+                       TextWrapping="Wrap" 
+                       Text="{Binding Text, Mode=OneWay}"/>
+        </Grid>
+    </Border>
+</UserControl>
