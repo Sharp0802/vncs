@@ -193,7 +193,7 @@ public class Node : IDisposable
         }
     }
 
-    public void UploadCode(Memory<byte> image)
+    public void UploadAndRun(Memory<byte> image)
     {
         Logger.Info($"Uploading COFF image({image.Length / 1024f:N3}KB)...");
         foreach (var socketContext in Peers)
@@ -201,6 +201,7 @@ public class Node : IDisposable
             if (socketContext.IsParent)
                 continue;
             socketContext.Queue(Op.Code, image);
+            socketContext.Queue(Op.Invoke, Array.Empty<byte>());
         }
     }
     

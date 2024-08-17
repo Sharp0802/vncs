@@ -135,6 +135,6 @@ public partial class MainView : UserControl
             return;
         }
         
-        _node.UploadCode(bytes);
+        _node.UploadAndRun(bytes);
     }
 }

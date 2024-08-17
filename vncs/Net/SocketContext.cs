@@ -192,6 +192,8 @@ public sealed record SocketContext(
 
         var required = op switch
         {
+            Op.Okay => 0,
+            
             Op.Code       => 0,
             Op.Invoke     => 0,
             Op.Disconnect => IsParent ? 6 : 0,
@@ -254,13 +256,8 @@ public sealed record SocketContext(
                         Queue(Op.ErrorNoEntryPoint, Array.Empty<byte>());
                         break;
                     }
-
-                    var assemblies = string.Join(", ", _domain.Assemblies.Select(
-                        a => $"'{a.GetName().Name ?? a.FullName}'"));
                         
                     // TODO : implement function parameters
-                    Queue(Op.Okay, Array.Empty<byte>());
-                    Logger.Info($"{assemblies} loaded");
 
                     if (asm.EntryPoint!.GetParameters().Length > 0 ||
                         asm.EntryPoint!.ReturnType != typeof(void))
@@ -271,6 +268,11 @@ public sealed record SocketContext(
                     }
 
                     _invoker = new Thread(asm.EntryPoint!.CreateDelegate<ThreadStart>());
+                    
+                    var assemblies = string.Join(", ", _domain.Assemblies.Select(
+                        a => $"'{a.GetName().Name ?? a.FullName}'"));
+                    Queue(Op.Okay, Array.Empty<byte>());
+                    Logger.Info($"{assemblies} loaded");
                 }
                 else
                 {
