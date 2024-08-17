@@ -1,9 +1,12 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -110,4 +113,28 @@ public partial class MainView : UserControl
 
     [GeneratedRegex(@"[0-9]{1,3}(\.?[0-9]{1,3}){3}(:[0-9]{1,5})?")]
     private static partial Regex EndPointFormatRegex();
+
+    private async void OnUpload(object? sender, RoutedEventArgs e)
+    {
+        var window = ((IClassicDesktopStyleApplicationLifetime)App.Current.ApplicationLifetime!).MainWindow;
+        
+        var dialog = new OpenFileDialog
+        {
+            AllowMultiple = false,
+            Filters = [ new FileDialogFilter{ Extensions = [ "dll" ] } ],
+            Title = "Select COFF image"
+        };
+        var file = (await dialog.ShowAsync(window))?.First();
+        if (file is null)
+            return;
+
+        var bytes = await File.ReadAllBytesAsync(file);
+        if (_node is null)
+        {
+            Logger.Fail("Service not started");
+            return;
+        }
+        
+        _node.UploadCode(bytes);
+    }
 }

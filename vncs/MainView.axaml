@@ -9,7 +9,7 @@
 
     <Grid ColumnDefinitions="Auto,*">
         <Grid Grid.Column="0" 
-              RowDefinitions="*,Auto" 
+              RowDefinitions="*,Auto,Auto" 
               MaxWidth="240" 
               Margin="10">
             <StackPanel Grid.Row="0" Name="ConfigurationPanel">
@@ -35,7 +35,7 @@
                          IsEnabled="False" />
             </StackPanel>
 
-            <Button Grid.Column="0" Grid.Row="1"
+            <Button Grid.Row="1"
                     HorizontalAlignment="Stretch"
                     Click="OnRun">
                 <StackPanel Orientation="Horizontal">
@@ -45,6 +45,17 @@
                                Text="|>"/>
                     <TextBlock Name="RunButtonText"
                                Text="Run"/>
+                </StackPanel>
+            </Button>
+            
+            <Button Grid.Row="2"
+                    HorizontalAlignment="Stretch"
+                    Click="OnUpload">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="avares://vncs/Assets#Fira Code"
+                               Foreground="Peru"
+                               Text="~~"/>
+                    <TextBlock Text="Upload"/>
                 </StackPanel>
             </Button>
         </Grid>

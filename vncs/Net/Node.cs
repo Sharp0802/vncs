@@ -2,9 +2,9 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 
 namespace vncs.Net;
@@ -91,8 +91,8 @@ public class Node : IDisposable
                         return false;
                     }
 
-                    var size = buffer.Memory.Span[0];
-                    for (var i = 0; i < size; )
+                    var size = buffer.Memory.Span[0] - 2;
+                    for (var i = 0; i < size;)
                     {
                         var rcv = socket.Receive(buffer.Memory.Slice(i, size - i).Span);
                         if (rcv <= 0)
@@ -104,9 +104,9 @@ public class Node : IDisposable
                         i += rcv;
                     }
 
-                    var address = new IPAddress(buffer.Memory[..4].Span);
-                    
-                    for (var i = 0; i < 2; )
+                    var address = new IPAddress(buffer.Memory[..size].Span);
+
+                    for (var i = 0; i < 2;)
                     {
                         var rcv = socket.Receive(buffer.Memory[..(2 - i)].Span);
                         if (rcv <= 0)
@@ -119,7 +119,7 @@ public class Node : IDisposable
                     }
 
                     var port = BinaryPrimitives.ReadUInt16BigEndian(buffer.Memory.Span);
-                    
+
                     _parent = new IPEndPoint(address, port);
 
                     Logger.Info($"Redirect to {_parent}");
@@ -175,7 +175,6 @@ public class Node : IDisposable
                 catch (Exception e)
                 {
                     Logger.Fail(e.ToString());
-                    Thread.Sleep(500);
                 }
             });
             _thread.Start();
@@ -194,6 +193,17 @@ public class Node : IDisposable
         }
     }
 
+    public void UploadCode(Memory<byte> image)
+    {
+        Logger.Info($"Uploading COFF image({image.Length / 1024f:N3}KB)...");
+        foreach (var socketContext in Peers)
+        {
+            if (socketContext.IsParent)
+                continue;
+            socketContext.Queue(Op.Code, image);
+        }
+    }
+    
     private void Run()
     {
         var listenerCtx = new SocketContext(Listener, false);
@@ -201,30 +211,28 @@ public class Node : IDisposable
         for (var i = 0; Volatile.Read(ref _token); i = (i + 1) % (Peers.Count + 1))
         {
             var ctx = i == 0 ? listenerCtx : Peers[i - 1];
-            if (!ctx.Socket.Poll(0, SelectMode.SelectRead))
-                continue;
 
-            if (ctx.Socket == Listener)
+            if (i == 0)
+            {
+                if (!ctx.Socket.Poll(0, SelectMode.SelectRead))
+                    continue;
+                
                 PassListener();
+            }
             else
             {
-                try
-                {
-                    PassChild(Peers[i - 1]);
-                }
-                catch (SocketException e)
-                {
-                    if (e.SocketErrorCode == SocketError.ConnectionRefused)
-                        Logger.Fail($"Connection refused by {ctx.Socket.RemoteEndPoint}");
-                    throw;
-                }
+                if (Peers[i - 1].Update(Peers)) 
+                    continue;
+                
+                Peers[i - 1].Dispose();
+                Peers.RemoveAt(i - 1);
             }
         }
     }
 
     private IPEndPoint GetRedirection()
     {
-        return (IPEndPoint)Peers[Random.Shared.Next(0, Peers.Count)].Socket.RemoteEndPoint!;
+        return Peers[Random.Shared.Next(0, Peers.Count)].RemoteEndPoint;
     }
 
     private void PassListener()
@@ -234,16 +242,16 @@ public class Node : IDisposable
         {
             remote = (IPEndPoint)client.RemoteEndPoint!;
             local  = (IPEndPoint)client.LocalEndPoint!;
-            
+
             Logger.Info($"{remote} knocking...");
 
             if (Peers.Count >= BranchingCriteria)
             {
                 var redirection = GetRedirection();
-                
+
                 var address = redirection.Address.GetAddressBytes();
-                
-                client.Send([0, (byte)address.Length]);
+
+                client.Send([0, (byte)(address.Length + 2)]);
                 client.Send(address);
                 Span<byte> port = stackalloc byte[2];
                 BinaryPrimitives.WriteUInt16BigEndian(port, (ushort)redirection.Port);
@@ -272,7 +280,7 @@ public class Node : IDisposable
             catch (SocketException e)
             {
                 peer.Close();
-                if (e.SocketErrorCode != SocketError.ConnectionRefused)
+                if (e.SocketErrorCode is not SocketError.ConnectionRefused and not SocketError.ConnectionReset)
                     throw;
             }
         }
@@ -285,24 +293,21 @@ public class Node : IDisposable
         }
 
         Logger.Info($"{remote} connected");
-        Peers.Add(new SocketContext(peer, false));
-    }
-
-    private void PassChild(SocketContext socket)
-    {
-        Console.WriteLine("hello");
-
-        using var buffer = MemoryPool<byte>.Shared.Rent(256);
-        socket.Socket.Send("Hello, World"u8);
-        var recv = socket.Socket.Receive(buffer.Memory.Span);
-
-        Logger.Info(Encoding.UTF8.GetString(buffer.Memory[..recv].Span));
+        var ctx = new SocketContext(peer, false);
+        Peers.Add(ctx);
     }
 
     public virtual void Dispose()
     {
+        var parent = Peers.SingleOrDefault(ctx => ctx.IsParent);
         foreach (var peer in Peers)
+        {
+            if (parent is not null && !peer.IsParent)
+                peer.Disconnect(parent);
+            else
+                peer.Disconnect();
             peer.Dispose();
+        }
         Listener.Dispose();
         GC.SuppressFinalize(this);
     }
